@@ -131,14 +131,19 @@ sub store_local_file {
 	$suffix ||= '.none';
 
 	#hash
-	my ( $sha1_obj, $md5_obj ) = $self->digest_local_path( $file, [qw/ sha1 md5  /] );
+	my @hashes = qw/sha1/;
+	push(@hashes,'md5') unless $p->{nomd5};
+	my ( $sha1_obj, $md5_obj ) = $self->digest_local_path( $file, \@hashes );
+
+	my $file_id = $self->get_set_id_for_file( {sha1_digest => $sha1_obj->digest} );
 
 	#required parameters
 	my $ip = {
-		file_id   => $self->get_set_id_for_file( {sha1_digest => $sha1_obj->digest} ),
+		file_id   => $file_id,
+		type_id   => $self->get_set_id_for_type( {suffix => $suffix} ),
 		path_id   => $self->get_set_id_for_path( $path ),
-		type_id   => $self->get_set_id_for_type( {suffix      => $suffix} ),
 		source_id => $source_id,
+
 	};
 
 	#optional parameters
@@ -147,8 +152,18 @@ sub store_local_file {
 		$ip->{name_id} = $self->get_set_id_for_name( $name );
 	}
 
+	if ( $md5_obj ) {
+		$self->get_set_md5_for_file(
+			{
+				file_id => $file_id,
+				md5_digest     => $md5_obj->digest
+			}
+		);
+	}
+
 	#create
-	my $new_id = $self->get_set_id_for_instance( $ip );
+	return $self->get_set_id_for_instance( $ip );
+
 }
 
 =head2 Wrappers
@@ -219,6 +234,13 @@ sub get_set_id_for_source {
 	return $self->_get_set_id_for_source( $p );
 }
 
+sub get_set_md5_for_file {
+	my ( $self, $p ) = @_;
+	$self->demand_params( $p, [qw/ file_id md5_digest /] );
+
+	return $self->_get_set_md5_for_file( $p );
+}
+
 =head2 Place holders
 	Should all be replaced in child classes 
 =cut
@@ -271,6 +293,13 @@ sub _get_set_id_for_source {
 	die( 'not implemented' );
 }
 
+=head3 _get_set_md5_for_file
+	
+=cut
+
+sub _get_set_md5_for_file {
+	die( 'not implemented' );
+}
 =head1 AUTHOR
 
 mmacnair, C<< <mmacnair at cpan.org> >>

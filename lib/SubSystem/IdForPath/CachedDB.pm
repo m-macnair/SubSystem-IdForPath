@@ -44,6 +44,7 @@ sub _init {
 	  types_suffix_to_id
 	  names_name_to_id
 	  instances_name_to_id
+	  file_md5s_md5_to_id
 	  /;
 	$self->mk_accessors( @table_caches );
 	$self->init_cache_for_accessors( \@table_caches );
@@ -198,6 +199,25 @@ sub _get_set_id_for_source {
 	);
 }
 
+
+sub _get_set_md5_for_file {
+	my ( $self, $p ) = @_;
+
+	$self->_preserve_sth( "file_md5s.get_id_from_md5()", "select id from file_md5s where md5 = ?" ) unless $self->_preserve_sth( "file_md5s.get_id_from_md5()" );
+	$self->_preserve_sth( "file_md5s.new()",              "insert into file_md5s (md5,file_id) values (?,?)" ) unless $self->_preserve_sth( "file_md5s.new()" );
+
+	return $self->_cache_or_db_or_new(
+		{
+			cache          => "file_md5s_md5_to_id",
+			cache_key      => "file_md5s_id_from_md5.$p->{md5_digest}",
+			get_sth_label  => "file_md5s.get_id_from_md5()",
+			get_sth_params => [ $p->{md5_digest} ],
+			set_sth_label  => "file_md5s.new()",
+			set_sth_params => [ $p->{md5_digest}, $p->{file_id}  ],
+		}
+	);
+
+}
 =head1 AUTHOR
 
 mmacnair, C<< <mmacnair at cpan.org> >>
