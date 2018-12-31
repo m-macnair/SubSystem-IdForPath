@@ -45,6 +45,8 @@ sub _init {
 	  names_name_to_id
 	  instances_name_to_id
 	  file_md5s_md5_to_id
+	  instance_names
+	  instance_paths
 	  /;
 	$self->mk_accessors( @table_caches );
 	$self->init_cache_for_accessors( \@table_caches );
@@ -199,12 +201,11 @@ sub _get_set_id_for_source {
 	);
 }
 
-
 sub _get_set_md5_for_file {
 	my ( $self, $p ) = @_;
 
-	$self->_preserve_sth( "file_md5s.get_id_from_md5()", "select id from file_md5s where md5 = ?" ) unless $self->_preserve_sth( "file_md5s.get_id_from_md5()" );
-	$self->_preserve_sth( "file_md5s.new()",              "insert into file_md5s (md5,file_id) values (?,?)" ) unless $self->_preserve_sth( "file_md5s.new()" );
+	$self->_preserve_sth( "file_md5s.get_id_from_md5()", "select id from file_md5s where md5 = ?" )           unless $self->_preserve_sth( "file_md5s.get_id_from_md5()" );
+	$self->_preserve_sth( "file_md5s.new()",             "insert into file_md5s (md5,file_id) values (?,?)" ) unless $self->_preserve_sth( "file_md5s.new()" );
 
 	return $self->_cache_or_db_or_new(
 		{
@@ -213,11 +214,82 @@ sub _get_set_md5_for_file {
 			get_sth_label  => "file_md5s.get_id_from_md5()",
 			get_sth_params => [ $p->{md5_digest} ],
 			set_sth_label  => "file_md5s.new()",
-			set_sth_params => [ $p->{md5_digest}, $p->{file_id}  ],
+			set_sth_params => [ $p->{md5_digest}, $p->{file_id} ],
 		}
 	);
 
 }
+
+=head3 _file_name_from_instance_id
+	
+=cut
+
+sub _file_name_from_instance_id {
+	my ( $self, $id, $params ) = @_;
+	Carp::croak( '$id required in _file_name_from_instance_id' ) unless $id;
+
+	# TODO implement source criteria
+	$self->_preserve_sth( "instance_name.from_names()", "select name from names join instances on instances.name_id = names.id where instances.id = ? " ) unless $self->_preserve_sth( "instance_name.from_names()" );
+	$self->_preserve_sth( "instance_name.from_hash()",  "select sha1 from files join instances on instances.file_id = files.id where instances.id = ? " ) unless $self->_preserve_sth( "instance_name.from_hash()" );
+
+	my $v = $self->_cache_or_db(
+		{
+			cache          => "instance_names",
+			cache_key      => "instance_name.name.$id",
+			cache_value    => 'name',
+			get_sth_label  => "instance_name.from_names()",
+			get_sth_params => [$id],
+
+		}
+	);
+	return $v if $v;
+
+	# Still TODO, put a value conversion facility in here
+	$v = $self->_cache_or_db(
+		{
+			cache          => "instance_names",
+			cache_key      => "instance_name.hash.$id",
+			cache_value    => 'name',
+			get_sth_label  => "instance_name.from_hash()",
+			get_sth_params => [$id],
+		}
+	);
+
+	return sprintf( '%x@', oct( "0b$v" ) ) if $v;
+
+}
+
+=head3 _path_from_instance_id
+	
+=cut
+
+sub _path_from_instance_id {
+	my ( $self, $id, $params ) = @_;
+
+	# TODO implement source criteria
+	Carp::croak( '$id required in _path_from_instance_id' ) unless $id;
+	$self->_preserve_sth( "instance_path.from_id()", "select path from paths join instances on instances.path_id = paths.id where instances.id = ? " ) unless $self->_preserve_sth( "instance_path.from_id()" );
+
+	my $v = $self->_cache_or_db(
+		{
+			cache          => "instance_paths",
+			cache_key      => "instance_path.$id",
+			cache_value    => 'path',
+			get_sth_label  => "instance_path.from_id()",
+			get_sth_params => [$id],
+		}
+	);
+	return $v if $v;
+}
+
+=head3 _source_from_instance_id
+	
+=cut
+
+sub _source_from_instance_id {
+	die( 'not implemented' );
+}
+
 =head1 AUTHOR
 
 mmacnair, C<< <mmacnair at cpan.org> >>

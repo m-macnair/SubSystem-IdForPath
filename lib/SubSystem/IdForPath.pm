@@ -23,9 +23,6 @@ our $VERSION = '0.01';
 	For when 'protocol://host/path/to/file.ext' is better represented as '12'
 	or
 	when 'protocol://host' and '/path/to/file.ext' might be useful as '3' and '13', such as when we don't particularly care *which* 'protocol://host' is used 
-	or
-	when 
-	
 	
 =head1 EXPORT
 	None
@@ -128,11 +125,12 @@ sub store_local_file {
 
 	#split, get ids for parts
 	my ( $name, $path, $suffix ) = File::Basename::fileparse( $file, qr/\.[^.]*/ );
+
 	$suffix ||= '.none';
 
 	#hash
 	my @hashes = qw/sha1/;
-	push(@hashes,'md5') unless $p->{nomd5};
+	push( @hashes, 'md5' ) unless $p->{nomd5};
 	my ( $sha1_obj, $md5_obj ) = $self->digest_local_path( $file, \@hashes );
 
 	my $file_id = $self->get_set_id_for_file( {sha1_digest => $sha1_obj->digest} );
@@ -149,14 +147,19 @@ sub store_local_file {
 	#optional parameters
 	#In many cases, the lower case SHA1.suffix will be used as the file name
 	unless ( $name eq $sha1_obj->hexdigest ) {
+		unless ( $name ) {
+			Carp::carp( "Name not detected for $file, exiting store_local_file" );
+			return;
+
+		}
 		$ip->{name_id} = $self->get_set_id_for_name( $name );
 	}
 
 	if ( $md5_obj ) {
 		$self->get_set_md5_for_file(
 			{
-				file_id => $file_id,
-				md5_digest     => $md5_obj->digest
+				file_id    => $file_id,
+				md5_digest => $md5_obj->digest
 			}
 		);
 	}
@@ -192,9 +195,9 @@ sub get_set_id_for_instance {
 =cut
 
 sub get_set_id_for_name {
-	my ( $self, $p ) = @_;
-	Carp::croak( "get_set_id_for_name called without a name" ) unless $p;
-	return $self->_get_set_id_for_name( $p );
+	my ( $self, $name ) = @_;
+	Carp::croak( "get_set_id_for_name called without a name" ) unless $name;
+	return $self->_get_set_id_for_name( $name );
 }
 
 =head3 get_set_id_for_path
@@ -204,6 +207,8 @@ sub get_set_id_for_name {
 sub get_set_id_for_path {
 	my ( $self, $path ) = @_;
 	Carp::croak( "get_set_id_for_path called without a path" ) unless $path;
+
+	#more a check to ensure we're storing a path instead of a file, the trailing slash is removed in storage since it should always be present
 	Carp::croak( "Missing trailing slash from [$path]" ) unless ( substr( $path, -1 ) eq '/' );
 	$path = File::Spec->rel2abs( $path );
 	return $self->_get_set_id_for_path( $path );
@@ -239,6 +244,16 @@ sub get_set_md5_for_file {
 	$self->demand_params( $p, [qw/ file_id md5_digest /] );
 
 	return $self->_get_set_md5_for_file( $p );
+}
+
+sub path_elements_from_instance_id {
+	my ( $self, $id ) = @_;
+	return {
+		file_name => _file_name_from_instance_id( $id ),
+		path      => _path_from_instance_id( $id ),
+		source    => _source_from_instance_id( $id )
+	};
+
 }
 
 =head2 Place holders
@@ -300,6 +315,31 @@ sub _get_set_id_for_source {
 sub _get_set_md5_for_file {
 	die( 'not implemented' );
 }
+
+=head3 _file_name_from_instance_id
+	
+=cut
+
+sub _file_name_from_instance_id {
+	die( 'not implemented' );
+}
+
+=head3 _path_from_instance_id
+	
+=cut
+
+sub _path_from_instance_id {
+	die( 'not implemented' );
+}
+
+=head3 _source_from_instance_id
+	
+=cut
+
+sub _source_from_instance_id {
+	die( 'not implemented' );
+}
+
 =head1 AUTHOR
 
 mmacnair, C<< <mmacnair at cpan.org> >>
