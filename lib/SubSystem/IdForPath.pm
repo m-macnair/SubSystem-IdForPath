@@ -104,10 +104,10 @@ sub digest_local_path {
 		always
 			digest
 			path
-			type
 			source
 		conditionally
 			name
+			type
 	and returns the new instance id 
 =cut
 
@@ -123,10 +123,8 @@ sub store_local_file {
 
 	$file = File::Spec->rel2abs( $file );
 
-	#split, get ids for parts
+	#split, get ids for parts. it's worth mentioning not all files need a suffix
 	my ( $name, $path, $suffix ) = File::Basename::fileparse( $file, qr/\.[^.]*/ );
-
-	$suffix ||= '.none';
 
 	#hash
 	my @hashes = qw/sha1/;
@@ -138,7 +136,6 @@ sub store_local_file {
 	#required parameters
 	my $ip = {
 		file_id   => $file_id,
-		type_id   => $self->get_set_id_for_type( {suffix => $suffix} ),
 		path_id   => $self->get_set_id_for_path( $path ),
 		source_id => $source_id,
 
@@ -154,6 +151,8 @@ sub store_local_file {
 		}
 		$ip->{name_id} = $self->get_set_id_for_name( $name );
 	}
+
+	$ip->{type_id} = $self->get_set_id_for_type( {suffix => $suffix} ) if $suffix;
 
 	if ( $md5_obj ) {
 		$self->get_set_md5_for_file(
@@ -186,7 +185,8 @@ sub get_set_id_for_file {
 
 sub get_set_id_for_instance {
 	my ( $self, $p ) = @_;
-	$self->demand_params( $p, [qw/ file_id path_id type_id source_id /] );
+	$self->demand_params( $p, [qw/ file_id path_id source_id /] );
+
 	return $self->_get_set_id_for_instance( $p );
 }
 
@@ -222,7 +222,9 @@ sub get_set_id_for_type {
 	my ( $self, $p ) = @_;
 
 	Carp::croak( "get_set_id_for_type called without a suffix or mime type" ) unless $self->one_of( $p, [qw/ suffix mime /] );
-	for ( qw/suffix mime / ) {
+
+	#suffix SHOULD be lc all the time but it's not
+	for ( qw/ mime / ) {
 		$p->{$_} = lc( $p->{$_} ) if $p->{$_};
 	}
 
@@ -248,9 +250,11 @@ sub get_set_md5_for_file {
 
 sub path_elements_from_instance_id {
 	my ( $self, $id ) = @_;
+	Carp::croak( '$id required in path_elements_from_instance_id' ) unless $id;
 
 	#There's an argument to cache this result as well
 	return {
+		suffix => $self->_suffix_from_instance_id( $id ) || '',
 		file_name => $self->_file_name_from_instance_id( $id ),
 		path      => $self->_path_from_instance_id( $id ),
 		source    => $self->_source_from_instance_id( $id )
@@ -339,6 +343,14 @@ sub _path_from_instance_id {
 =cut
 
 sub _source_from_instance_id {
+	die( 'not implemented' );
+}
+
+=head3 _suffix_from_instance_id
+	
+=cut
+
+sub _suffix_from_instance_id {
 	die( 'not implemented' );
 }
 

@@ -7,8 +7,8 @@ use File::Slurp;
 main( @ARGV );
 
 sub main {
-	Carp::croak("Supplied parameter [$_[0]] is not a valid directory") unless ( -d $_[0]);
-	
+	Carp::croak( "Supplied parameter [$_[0]] is not a valid directory" ) unless ( -d $_[0] );
+
 	my $db_file = time . "_path_ids.sqlite";
 	my $obj     = SubSystem::IdForPath::CachedDB->new(
 		{
@@ -23,10 +23,10 @@ sub main {
 			],
 		}
 	);
-	
+
 	my $sql_strings = read_file( "./etc/sqlite_schema.sql" );
 	for ( split( $/, $sql_strings ) ) {
-			$obj->dbh->do( $_  );
+		$obj->dbh->do( $_ );
 	}
 
 	$obj->default_source_id( 2 );
@@ -64,21 +64,22 @@ sub main {
 	$obj->clean_finish();
 	print "$/It is done. Move on.$/";
 }
-sub findfilesub {
-		my ( $dir, $sub ) = @_;
-		die "[$dir] is not a directory" unless ( -d $dir );
-		require File::Find;
 
-		File::Find::find(
-			{
-				wanted => sub {
-					return if -d ( $File::Find::name );
-					return if -l ( $File::Find::name );
-					&$sub( $File::Find::name );
-				},
-				no_chdir => 1,
-				follow   => 0,
+sub findfilesub {
+	my ( $dir, $sub ) = @_;
+	die "[$dir] is not a directory" unless ( -d $dir );
+	require File::Find;
+
+	File::Find::find(
+		{
+			wanted => sub {
+				return if -d ( $File::Find::name );
+				return if -l ( $File::Find::name );
+				&$sub( $File::Find::name );
 			},
-			$dir
-		);
-	}
+			no_chdir => 1,
+			follow   => 0,
+		},
+		$dir
+	);
+}

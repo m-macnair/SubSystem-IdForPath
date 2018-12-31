@@ -48,6 +48,7 @@ sub _init {
 	  instance_names
 	  instance_paths
 	  sources_from_id
+	  type_suffix
 	  /;
 	$self->mk_accessors( @table_caches );
 	$self->init_cache_for_accessors( \@table_caches );
@@ -98,11 +99,14 @@ sub _get_set_id_for_instance {
 		and path_id = ?
 		and source_id = ?
 		and name_id = ?
+		and type_id = ?
 		"
 	) unless $self->_preserve_sth( "instances.get_id()" );
-	$self->_preserve_sth( "instances.new()", "insert into instances (file_id,path_id,source_id,name_id) values (?,?,?,?)" ) unless $self->_preserve_sth( "instances.new()" );
-	my $array_params = [ $p->{file_id}, $p->{path_id}, $p->{source_id}, $p->{name_id} ];
-	my $key = "$p->{file_id},$p->{path_id},$p->{source_id},$p->{name_id}";
+
+	$p->{type_id} ||= '';
+	$self->_preserve_sth( "instances.new()", "insert into instances (file_id,path_id,source_id,name_id,type_id) values (?,?,?,?,?)" ) unless $self->_preserve_sth( "instances.new()" );
+	my $array_params = [ $p->{file_id}, $p->{path_id}, $p->{source_id}, $p->{name_id}, $p->{type_id} ];
+	my $key = "$p->{file_id},$p->{path_id},$p->{source_id},$p->{name_id},$p->{type_id}";
 	return $self->_cache_or_db_or_new(
 		{
 			cache          => "instances_name_to_id",
@@ -305,6 +309,28 @@ sub _source_from_instance_id {
 	);
 	return $v if $v;
 
+}
+
+=head3 _suffix_from_instance_id
+	
+=cut
+
+sub _suffix_from_instance_id {
+	my ( $self, $id, $params ) = @_;
+	Carp::croak( '$id required in _suffix_from_instance_id' ) unless $id;
+	$self->_preserve_sth( "types.suffix.from_id()", "select suffix from types join instances on instances.type_id = types.id where instances.id = ? " ) unless $self->_preserve_sth( "types.suffix.from_id()" );
+
+	my $v = $self->_cache_or_db(
+		{
+			cache          => "type_suffix",
+			cache_key      => "suffix.$id",
+			cache_value    => 'suffix',
+			get_sth_label  => "types.suffix.from_id()",
+			get_sth_params => [$id],
+		}
+	);
+
+	return $v;
 }
 
 =head1 AUTHOR
