@@ -47,6 +47,7 @@ sub _init {
 	  file_md5s_md5_to_id
 	  instance_names
 	  instance_paths
+	  sources_from_id
 	  /;
 	$self->mk_accessors( @table_caches );
 	$self->init_cache_for_accessors( \@table_caches );
@@ -287,7 +288,23 @@ sub _path_from_instance_id {
 =cut
 
 sub _source_from_instance_id {
-	die( 'not implemented' );
+	my ( $self, $id, $params ) = @_;
+
+	# TODO implement source criteria
+	Carp::croak( '$id required in _source_from_instance_id' ) unless $id;
+	$self->_preserve_sth( "source.from_id()", "select name from sources  join instances on instances.source_id = sources.id where instances.id = ? " ) unless $self->_preserve_sth( "source.from_id()" );
+
+	my $v = $self->_cache_or_db(
+		{
+			cache          => "sources_from_id",
+			cache_key      => "source.$id",
+			cache_value    => 'name',
+			get_sth_label  => "source.from_id()",
+			get_sth_params => [$id],
+		}
+	);
+	return $v if $v;
+
 }
 
 =head1 AUTHOR
