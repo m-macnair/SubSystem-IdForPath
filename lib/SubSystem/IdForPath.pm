@@ -248,8 +248,9 @@ sub get_set_md5_for_file {
 
 sub path_elements_from_instance_id {
 	my ( $self, $id ) = @_;
-	return {
 
+	#There's an argument to cache this result as well
+	return {
 		file_name => $self->_file_name_from_instance_id( $id ),
 		path      => $self->_path_from_instance_id( $id ),
 		source    => $self->_source_from_instance_id( $id )
