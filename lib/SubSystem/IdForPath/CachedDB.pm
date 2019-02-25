@@ -49,6 +49,7 @@ sub _init {
 	  instance_paths
 	  sources_from_id
 	  type_suffix
+	  any_instance
 	  /;
 	$self->mk_accessors( @table_caches );
 	$self->init_cache_for_accessors( \@table_caches );
@@ -331,6 +332,27 @@ sub _suffix_from_instance_id {
 	);
 
 	return $v;
+}
+
+=head3 _get_any_instance_id
+	Get some instance by some rule or other
+	Atm it's literally 'the first for the file'
+	Question mark over if this should be cached
+=cut
+
+sub _get_any_instance_id {
+	my ( $self, $file_id, $p ) = @_;
+	$self->_preserve_sth( "_get_any_instance_id()", sprintf( 'select id from %s where file_id = ?', 'instances' ) ) unless $self->_preserve_sth( "_get_any_instance_id()" );
+	$self->{debug_level} = 2;
+	return $self->_cache_or_db(
+		{
+			cache          => "any_instance",
+			cache_key      => "any_instance.$file_id",
+			cache_value    => 'id',
+			get_sth_label  => "_get_any_instance_id()",
+			get_sth_params => [$file_id],
+		}
+	);
 }
 
 =head1 AUTHOR

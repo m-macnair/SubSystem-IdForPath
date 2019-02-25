@@ -28,7 +28,8 @@ sub main {
 	for ( split( $/, $sql_strings ) ) {
 		$obj->dbh->do( $_ );
 	}
-
+	$obj->_commit();
+	$obj->{debug_level} = 1;
 	$obj->default_source_id( 2 );
 
 	findfilesub(
@@ -38,13 +39,15 @@ sub main {
 			return unless -f $file_path;
 			my $progress = "$file_path ... ";
 			my $size     = -s $file_path;
-			if ( $size > 75000000 ) {
-				warn( "$progress Skipping due to size of $size" );
+			if ( $size > 175000000 ) {
+
+				# 				warn( "$progress Skipping due to size of $size" );
 				return;
 			}
 			for ( qw/ .txt .yml .html / ) {
 				if ( index( $file_path, $_ ) != -1 ) {
-					warn( "$progress Skipping due to likely file type of $_" );
+
+					# 					warn( "$progress Skipping due to likely file type of $_" );
 					return;
 				}
 			}

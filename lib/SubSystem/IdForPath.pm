@@ -39,7 +39,8 @@ sub _init {
 }
 
 sub get_this_instance {
-	die 'Not Yet Implemented';
+	my ( $self, $instance_id ) = @_;
+	return $self->path_elements_from_instance_id( $instance_id );
 }
 
 =head3 get_any_instance
@@ -47,7 +48,14 @@ sub get_this_instance {
 =cut
 
 sub get_any_instance {
-	die 'Not Yet Implemented';
+	my ( $self, $file_id, $p ) = @_;
+	my $instance_id = $self->_get_any_instance_id( $file_id );
+
+	if ( $instance_id ) {
+		return {pass => $self->path_elements_from_instance_id( $instance_id )};
+	} else {
+		return {fail => "No instance available"};
+	}
 }
 
 sub demand_params {
@@ -351,6 +359,14 @@ sub _source_from_instance_id {
 =cut
 
 sub _suffix_from_instance_id {
+	die( 'not implemented' );
+}
+
+=head3 _suffix_from_instance_id
+	
+=cut
+
+sub _get_any_instance_id {
 	die( 'not implemented' );
 }
 
